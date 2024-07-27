@@ -16,7 +16,13 @@ bool do_system(const char *cmd)
  *   and return a boolean true if the system() call completed with success
  *   or false() if it returned a failure
 */
-
+int ret = system(cmd);
+if(ret  == 0)
+    return true;
+else {
+    perror("system");
+    return false;
+}
     return true;
 }
 
@@ -58,6 +64,37 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
+if (command[0][0] != '/')
+    {
+        perror("This in not the absolute path");
+        return false;
+    }
+    fflush(stdout);
+    int status;
+    pid_t pid = fork();
+    if (pid == -1) 
+    {
+        perror("fork");
+        return false;
+    }
+    else if (pid == 0)
+    {
+        int ret = execv(command[0],command);
+       if(ret == -1)
+       {
+        perror("execv");
+         exit(EXIT_FAILURE);
+        return false;
+       }
+    }
+   if(waitpid(pid, &status, 0)==-1)
+   {    perror("waitpid");
+        return false;
+   }
+    else if (WIFEXITED(status))
+        if(WEXITSTATUS(status) != 0)
+             return false;
+    return true;
 
     va_end(args);
 
@@ -92,6 +129,59 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *   The rest of the behaviour is same as do_exec()
  *
 */
+    fflush(stdout);
+    
+    int status;
+    
+    pid_t pid = fork();
+    
+    if (pid == -1) 
+    {
+        perror("fork");
+        return false;
+    }
+    
+    else if (pid == 0)
+    {
+        // opening the needed file.
+        int fd = open (outputfile , O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0644);
+        
+        // checking for open() errors
+        if(fd < 0)
+        {
+            perror("open");
+            return false;
+        }
+
+        // redirecting stdout to our file
+       if(dup2(fd,STDOUT_FILENO)<0)
+       {
+	    perror("dup2"); 
+	    return false; 
+	    }
+        // close fd to release the file descriptor for another file  
+        close(fd);
+
+    // executing passed command
+    int ret = execv(command[0],command);
+
+       // handling execv() errors 
+       if(ret == -1)
+       {
+        perror("execv");
+        exit(EXIT_FAILURE);
+       }
+
+    }
+        
+   if(waitpid(pid, &status, 0)==-1)
+   {    perror("waitpid");
+        return false;
+   }
+    else if (WIFEXITED(status))
+        if(WEXITSTATUS(status) != 0)
+             return false;
+    return true;
 
     va_end(args);
 
