@@ -8,9 +8,8 @@ set -u
 NUMFILES=10
 WRITESTR=AELD_IS_FUN
 WRITEDIR=/tmp/aeld-data
-username=$(cat /etc/finder-app/conf/username.txt)
-writerapp=/bin/writer
-finderapp=/bin/finder.sh
+CONFIGDIR=/etc/finder-app/conf
+username=$(cat ${CONFIGDIR}/username.txt)
 
 if [ $# -lt 3 ]
 then
@@ -34,7 +33,7 @@ echo "Writing ${NUMFILES} files containing string ${WRITESTR} to ${WRITEDIR}"
 rm -rf "${WRITEDIR}"
 
 # create $WRITEDIR if not assignment1
-assignment=`cat /etc/finder-app/conf/assignment.txt`
+assignment=`cat ${CONFIGDIR}/assignment.txt`
 
 if [ $assignment != 'assignment1' ]
 then
@@ -50,27 +49,29 @@ then
 		exit 1
 	fi
 fi
-#echo "Removing the old writer utility and compiling as a native application"
-#make clean
-#make
-
 
 for i in $( seq 1 $NUMFILES)
 do
-	${writerapp} "$WRITEDIR/${username}$i.txt" "$WRITESTR"
+	writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
 done
 
-OUTPUTSTRING=$(${finderapp} "$WRITEDIR" "$WRITESTR")
-echo ${OUTPUTSTRING} > /tmp/assignment4-result.txt
+OUTPUTSTRING=$(finder.sh "$WRITEDIR" "$WRITESTR")
+
 # remove temporary directories
 rm -rf /tmp/aeld-data
+
+# Assinment 4:
+# Modify your finder-test.sh script to write a file with output of the finder command
+# to /tmp/assignment4-result.txt
+
+echo ${OUTPUTSTRING} > /tmp/${assignment}-result.txt
 
 set +e
 echo ${OUTPUTSTRING} | grep "${MATCHSTR}"
 if [ $? -eq 0 ]; then
-	echo "success" | tee /tmp/assignment4-result.txt
+	echo "success"
 	exit 0
 else
-	echo "failed: expected  ${MATCHSTR} in ${OUTPUTSTRING} but instead found" | tee /tmp/assignment4-result.txt
+	echo "failed: expected  ${MATCHSTR} in ${OUTPUTSTRING} but instead found"
 	exit 1
 fi
